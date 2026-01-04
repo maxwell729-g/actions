@@ -1,38 +1,55 @@
 name: Check Website Text
 on:
   schedule:
-    - cron: '0 8 * * *' # 毎日 朝8時(UTC) -> 日本時間 17時ごろ実行
-    # 日本時間の朝9時にしたい場合は '0 0 * * *' にしてください
-  workflow_dispatch: # 手動実行ボタンも有効化
+    - cron: '0 8 * * *' # 日本時間 17時
+  workflow_dispatch:
 
 jobs:
-  check-and-notify:
+  check-sites:
     runs-on: ubuntu-latest
     steps:
-      - name: Check website for text
-        id: check
-        # "特定の文言" を監視したい言葉に変えてください
-        # 文言があれば成功(終了)、なければ失敗(次のステップへ)となります
+      - name: Check multiple websites
+        id: check_step
         run: |
-          if curl -s "https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2240.html" | grep -q "テスト"; then
-            echo "文言が見つかりました。正常です。"
-            exit 0
-          else
-            echo "文言が見つかりません！異常です。"
-            exit 1
+          # エラーメッセージを格納する変数を初期化
+          ERROR_LOG=""
+
+          # --- 1つ目のサイトチェック ---
+          URL1="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2240.html"
+          TEXT1="特定の文言1"
+          if ! curl -sL "$URL1" | grep -q "$TEXT1"; then
+            ERROR_LOG="${ERROR_LOG}・サイト1 ($URL1) で「$TEXT1」が見つかりませんでした。%0A"
           fi
 
-      - name: Send Email if text is missing
-        if: failure() # 上のステップが「失敗（文言なし）」した時だけ動く
+          # --- 2つ目のサイトチェック ---
+          URL2"https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
+          TEXT2="特定の文言2"
+          if ! curl -sL "$URL2" | grep -q "$TEXT2"; then
+            ERROR_LOG="${ERROR_LOG}・サイト2 ($URL2) で「$TEXT2」が見つかりませんでした。%0A"
+          fi
+
+          # 結果の判定
+          if [ -n "$ERROR_LOG" ]; then
+            echo "status=missing" >> $GITHUB_OUTPUT
+            echo "details=$ERROR_LOG" >> $GITHUB_OUTPUT
+          else
+            echo "status=ok" >> $GITHUB_OUTPUT
+          fi
+        # ここで exit 1 を使わないため、GitHubからの「Run failed」通知は飛びません。
+
+      - name: Send Email if missing
+        # ステップの結果が「missing」の時だけ実行
+        if: steps.check_step.outputs.status == 'missing'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 465
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
-          subject: 【緊急】Webサイトから文言が消えました
+          subject: 【警告】Webサイトの更新・異常検知
           body: |
-            確認したWebサイトから、指定した文言が見つかりませんでした。
-            確認してください。
+            以下のサイトで指定した文言が確認できませんでした。確認してください。
+
+            ${{ steps.check_step.outputs.details }}
           to: ${{ secrets.MAIL_USERNAME }}
           from: GitHub Actions
