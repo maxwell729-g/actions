@@ -1,7 +1,7 @@
 name: Check Website Text
 on:
   schedule:
-    - cron: '0 8 * * *' # 日本時間 17時
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,45 +11,46 @@ jobs:
       - name: Check multiple websites
         id: check_step
         run: |
-          # エラーメッセージを格納する変数を初期化
-          ERROR_LOG=""
+          # エラーメッセージを一時保存するファイルを作成
+          touch error_message.txt
 
           # --- 1つ目のサイトチェック ---
           URL1="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2240.html"
           TEXT1="特定の文言1"
           if ! curl -sL "$URL1" | grep -q "$TEXT1"; then
-            ERROR_LOG="${ERROR_LOG}・サイト1 ($URL1) で「$TEXT1」が見つかりませんでした。%0A"
+            echo "・サイト1 ($URL1) で「$TEXT1」が見つかりませんでした。" >> error_message.txt
           fi
 
           # --- 2つ目のサイトチェック ---
           URL2="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
           TEXT2="特定の文言2"
           if ! curl -sL "$URL2" | grep -q "$TEXT2"; then
-            ERROR_LOG="${ERROR_LOG}・サイト2 ($URL2) で「$TEXT2」が見つかりませんでした。%0A"
+            echo "・サイト2 ($URL2) で「$TEXT2」が見つかりませんでした。" >> error_message.txt
           fi
 
-          # 結果の判定
-          if [ -n "$ERROR_LOG" ]; then
+          # 結果の判定とGitHub出力への書き込み
+          if [ -s error_message.txt ]; then
             echo "status=missing" >> $GITHUB_OUTPUT
-            echo "details=$ERROR_LOG" >> $GITHUB_OUTPUT
+            # 【重要】GitHub Actionsで複数行を扱うための特殊な書き方
+            echo "details<<EOF" >> $GITHUB_OUTPUT
+            cat error_message.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "status=ok" >> $GITHUB_OUTPUT
           fi
-        # ここで exit 1 を使わないため、GitHubからの「Run failed」通知は飛びません。
 
       - name: Send Email if missing
-        # ステップの結果が「missing」の時だけ実行
         if: steps.check_step.outputs.status == 'missing'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: 【警告】Webサイトの更新・異常検知
+          username: ${{ secrets.EMAIL }}
+          password: ${{ secrets.APP_PASS }}
+          subject: 【緊急】UR物件
           body: |
             以下のサイトで指定した文言が確認できませんでした。確認してください。
 
             ${{ steps.check_step.outputs.details }}
-          to: ${{ secrets.MAIL_USERNAME }}
+          to: ${{ secrets.EMAIL }}
           from: GitHub Actions
