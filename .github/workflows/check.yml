@@ -1,0 +1,38 @@
+name: Check Website Text
+on:
+  schedule:
+    - cron: '0 8 * * *' # 毎日 朝8時(UTC) -> 日本時間 17時ごろ実行
+    # 日本時間の朝9時にしたい場合は '0 0 * * *' にしてください
+  workflow_dispatch: # 手動実行ボタンも有効化
+
+jobs:
+  check-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check website for text
+        id: check
+        # "特定の文言" を監視したい言葉に変えてください
+        # 文言があれば成功(終了)、なければ失敗(次のステップへ)となります
+        run: |
+          if curl -s "https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2240.html" | grep -q "テスト"; then
+            echo "文言が見つかりました。正常です。"
+            exit 0
+          else
+            echo "文言が見つかりません！異常です。"
+            exit 1
+          fi
+
+      - name: Send Email if text is missing
+        if: failure() # 上のステップが「失敗（文言なし）」した時だけ動く
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: 【緊急】Webサイトから文言が消えました
+          body: |
+            確認したWebサイトから、指定した文言が見つかりませんでした。
+            確認してください。
+          to: ${{ secrets.MAIL_USERNAME }}
+          from: GitHub Actions
