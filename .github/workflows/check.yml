@@ -18,14 +18,14 @@ jobs:
           URL1="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2240.html"
           TEXT1="特定の文言1"
           if ! curl -sL "$URL1" | grep -q "$TEXT1"; then
-            echo "・サイト1 ($URL1) で「$TEXT1」が見つかりませんでした。" >> error_message.txt
+            echo "・さるびあ第一：$URL1" >> error_message.txt
           fi
 
           # --- 2つ目のサイトチェック ---
           URL2="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
-          TEXT2="特定の文言2"
+          TEXT2="ご案内できるお部屋がございません"
           if ! curl -sL "$URL2" | grep -q "$TEXT2"; then
-            echo "・サイト2 ($URL2) で「$TEXT2」が見つかりませんでした。" >> error_message.txt
+            echo "・さるびあ第二：$URL2" >> error_message.txt
           fi
 
           # 結果の判定とGitHub出力への書き込み
@@ -49,7 +49,7 @@ jobs:
           password: ${{ secrets.APP_PASS }}
           subject: 【緊急】UR物件
           body: |
-            以下のサイトで指定した文言が確認できませんでした。確認してください。
+            以下の物件に空きが出た可能性があります。確認してください。
 
             ${{ steps.check_step.outputs.details }}
           to: ${{ secrets.EMAIL }}
