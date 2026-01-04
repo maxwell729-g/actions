@@ -1,7 +1,7 @@
 name: Check Website Text
 on:
   schedule:
-    - cron: '3-58/5 * * * *'
+    - cron: '3,8,13,18,23,28,33,38,43,48,53,58 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
       - name: Check multiple websites
         id: check_step
         run: |
-          # エラーメッセージを一時保存するファイルを作成
+          # エラーメッセージを一時保存するファイルを作成23,0-10
           touch error_message.txt
 
           # --- 1つ目のサイトチェック ---
@@ -23,7 +23,7 @@ jobs:
 
           # --- 2つ目のサイトチェック ---
           URL2="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
-          TEXT2="ご案内できお部屋がございません"
+          TEXT2="ご案内できuるお部屋がございません"
           if ! curl -sL "$URL2" | grep -q "$TEXT2"; then
             echo "・さるびあ第二 ($URL2)" >> error_message.txt
           fi
