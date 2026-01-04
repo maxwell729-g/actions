@@ -22,7 +22,7 @@ jobs:
           fi
 
           # --- 2つ目のサイトチェック ---
-          URL2"https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
+          URL2="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
           TEXT2="特定の文言2"
           if ! curl -sL "$URL2" | grep -q "$TEXT2"; then
             ERROR_LOG="${ERROR_LOG}・サイト2 ($URL2) で「$TEXT2」が見つかりませんでした。%0A"
