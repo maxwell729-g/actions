@@ -1,4 +1,4 @@
-name: Check Website Text
+name: Check By schedule
 on:
   schedule:
     - cron: '3,13,23,33,43,53 23,0-10 * * *'

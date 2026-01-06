@@ -1,4 +1,4 @@
-name: Check Website Text
+name: Check By cron-job
 on:
   repository_dispatch:
     types: [manual-check]
