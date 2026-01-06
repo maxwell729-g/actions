@@ -1,7 +1,7 @@
 name: Check Website Text
 on:
   schedule:
-    - cron: '3,8,13,18,23,28,33,38,43,48,53,58 23,0-10 * * *'
+    - cron: '3,13,23,33,43,53 23,0-10 * * *'
   workflow_dispatch:
 
 jobs:
@@ -16,14 +16,14 @@ jobs:
 
           # --- 1つ目のサイトチェック ---
           URL1="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2240.html"
-          TEXT1="特定の文言1"
+          TEXT1="ご案内できるお部屋がございません"
           if ! curl -sL "$URL1" | grep -q "$TEXT1"; then
             echo "・さるびあ第一 ($URL1)" >> error_message.txt
           fi
 
           # --- 2つ目のサイトチェック ---
           URL2="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
-          TEXT2="ご案内できuるお部屋がございません"
+          TEXT2="ご案内できるお部屋がございません"
           if ! curl -sL "$URL2" | grep -q "$TEXT2"; then
             echo "・さるびあ第二 ($URL2)" >> error_message.txt
           fi
