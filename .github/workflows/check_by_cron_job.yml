@@ -1,0 +1,59 @@
+name: Check Website Text
+on:
+  repository_dispatch:
+    types: [manual-check]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Check
+        id: check_step
+        run: |
+          # エラーメッセージを一時保存するファイルを作成
+          touch error_message.txt
+
+          # --- 1つ目のサイトチェック ---
+          URL1="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2240.html"
+          TEXT1="ご案内できるuお部屋がございません"
+          if ! curl -sL "$URL1" | grep -q "$TEXT1"; then
+            echo "・さるびあ第一 ($URL1)" >> error_message.txt
+          fi
+
+          # --- 2つ目のサイトチェック ---
+          URL2="https://www.ur-net.go.jp/chintai/kanto/kanagawa/40_2250.html"
+          TEXT2="ご案内できるお部屋がございません"
+          if ! curl -sL "$URL2" | grep -q "$TEXT2"; then
+            echo "・さるびあ第二 ($URL2)" >> error_message.txt
+          fi
+
+          # 結果の判定とGitHub出力への書き込み
+          if [ -s error_message.txt ]; then
+            echo "status=missing" >> $GITHUB_OUTPUT
+            # 【重要】GitHub Actionsで複数行を扱うための特殊な書き方
+            echo "details<<EOF" >> $GITHUB_OUTPUT
+            cat error_message.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "status=ok" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Email if missing
+        if: steps.check_step.outputs.status == 'missing'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL }}
+          password: ${{ secrets.APP_PASS }}
+          subject: 【緊急】UR物件
+          body: |
+            以下の物件に空きが出た可能性があります。確認してください。
+
+            ${{ steps.check_step.outputs.details }}
+          to: ${{ secrets.EMAIL }}
+          from: GitHub Actions
